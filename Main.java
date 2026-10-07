@@ -1,198 +1,141 @@
-import java.util.Scanner;
+import javax.swing.*;
+import java.awt.*;
 
 public class Main {
-
-    private static Scanner scanner = new Scanner(System.in);
+    // Control del simulador
+    private static Cocina cocina = new Cocina();
+    private static Cocinero chef = new Cocinero("Gabriel Yanes");
+    private static int numOrden = 21940;
 
     public static void main(String[] args) {
-        Cocina cocina = new Cocina();
-        Cocinero chef = new Cocinero("Gabriel Yanes");
-        int contadorNumOrden = 21940;
+        JFrame frame = new JFrame("Simulador de Pizzería");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout(10, 10));
 
-        boolean salir = false;
+        // Panel de formulario con GridLayout (estilo Ejemplo 3)
+        JPanel campos = new JPanel(new GridLayout(6, 2, 5, 5));
+        campos.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        while (!salir) {
-            System.out.println("\n=================================================================");
-            System.out.println("          PIZZERÍA - SIMULADOR");
-            System.out.println("  1. Crear y enviar una nueva Orden a la Cocina");
-            System.out.println("  2. Ver órdenes pendientes en Cocina (Arreglo estático máx. 5)");
-            System.out.println("  3. Despachar y preparar siguiente orden (Cocinero)");
-            System.out.println("  4. Salir");
-            System.out.println("=================================================================");
-            System.out.print("Seleccione una opción: ");
+        // 1. Ingreso de texto: Nombre del cliente
+        JTextField txtCliente = new JTextField();
 
-            int opcion = leerEntero();
+        // 2. Selección: Masa y Salsa
+        JComboBox<String> cbMasa = new JComboBox<>(new String[]{"Tradicional", "Delgada", "Gruesa", "Borde de Queso"});
+        JComboBox<String> cbSalsa = new JComboBox<>(new String[]{"Normal", "Picante", "Barbacoa", "Salsa Blanca"});
 
-            switch (opcion) {
-                case 1:
-                    contadorNumOrden++;
-                    crearNuevaOrdenInteractiva(cocina, contadorNumOrden);
-                    break;
+        // 3. Cajitas (JCheckBox): Queso e Ingredientes
+        JCheckBox chkQueso = new JCheckBox("Lleva Queso Mozzarella", true);
 
-                case 2:
-                    System.out.println();
-                    // Demostración del recorrido estático sin usar .length
-                    cocina.mostrarOrdenesPendientes();
-                    break;
+        JCheckBox chkPepperoni = new JCheckBox("Pepperoni");
+        JCheckBox chkJamon = new JCheckBox("Jamón");
+        JCheckBox chkPina = new JCheckBox("Piña");
+        JPanel panelIngredientes = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        panelIngredientes.add(chkPepperoni);
+        panelIngredientes.add(chkJamon);
+        panelIngredientes.add(chkPina);
 
-                case 3:
-                    System.out.println("\n--- DESPACHO Y PREPARACIÓN DE ORDEN ---");
-                    Orden ordenDespachada = cocina.despacharSiguienteOrden();
-                    if (ordenDespachada != null) {
-                        chef.preparar(ordenDespachada);
-                    }
-                    break;
+        // Ingreso de texto: Ingrediente extra
+        JTextField txtExtra = new JTextField();
 
-                case 4:
-                    System.out.println("\nGracias por usar el simulador de Pizza.");
-                    salir = true;
-                    break;
+        // Agregar etiquetas y componentes al formulario
+        campos.add(new JLabel("Cliente (Texto):"));
+        campos.add(txtCliente);
+        campos.add(new JLabel("Masa (Selección):"));
+        campos.add(cbMasa);
+        campos.add(new JLabel("Salsa (Selección):"));
+        campos.add(cbSalsa);
+        campos.add(new JLabel("Queso (Cajita):"));
+        campos.add(chkQueso);
+        campos.add(new JLabel("Ingredientes (Cajitas):"));
+        campos.add(panelIngredientes);
+        campos.add(new JLabel("Ingrediente Extra (Texto):"));
+        campos.add(txtExtra);
 
-                default:
-                    System.out.println("Opción inválida. Por favor seleccione un número del 1 al 5.");
-                    break;
+        // Panel de botones (acciones)
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        JButton btnCrear = new JButton("Crear y Enviar Orden");
+        JButton btnVer = new JButton("Ver Pendientes");
+        JButton btnDespachar = new JButton("Despachar Orden");
+        panelBotones.add(btnCrear);
+        panelBotones.add(btnVer);
+        panelBotones.add(btnDespachar);
+
+        // Área de salida para mostrar resultados
+        JTextArea salida = new JTextArea(6, 30);
+        salida.setEditable(false);
+
+        // --- ACCIONES DE LOS BOTONES ---
+
+        // Botón 1: Crear la orden y mandarla a cocina
+        btnCrear.addActionListener(e -> {
+            numOrden++;
+            String cliente = txtCliente.getText().trim();
+            if (cliente.isEmpty()) {
+                cliente = "Cliente general";
             }
-        }
 
-        scanner.close();
-    }
+            // Armar la pizza con masa, salsa y queso
+            Pizza pizza = new Pizza(
+                (String) cbMasa.getSelectedItem(),
+                (String) cbSalsa.getSelectedItem(),
+                chkQueso.isSelected()
+            );
 
-    private static void crearNuevaOrdenInteractiva(Cocina cocina, int numOrden) {
-        System.out.println("\n--- CREACIÓN DE NUEVA ORDEN #" + numOrden + " ---");
-        System.out.print("Ingrese el nombre del cliente: ");
-        String cliente = scanner.nextLine().trim();
-        if (cliente.isEmpty()) {
-            cliente = "Cliente general";
-        }
+            // Agregar ingredientes de las cajitas marcadas
+            if (chkPepperoni.isSelected()) pizza.agregarIngrediente("Pepperoni");
+            if (chkJamon.isSelected()) pizza.agregarIngrediente("Jamón");
+            if (chkPina.isSelected()) pizza.agregarIngrediente("Piña");
 
-        Orden orden = new Orden(numOrden, cliente);
-        boolean agregarMasPizzas = true;
+            // Agregar ingrediente extra si se escribió texto
+            String extra = txtExtra.getText().trim();
+            if (!extra.isEmpty()) {
+                pizza.agregarIngrediente(extra);
+            }
 
-        while (agregarMasPizzas) {
-            Pizza pizza = armarPizzaInteractiva();
+            // Crear orden y agregar pizza
+            Orden orden = new Orden(numOrden, cliente);
             orden.agregarPizza(pizza);
-            System.out.println("\nPizza agregada a la orden");
-            System.out.println("   " + pizza);
 
-            System.out.print("\nDesea agregar otra pizza a esta misma orden? (s/n): ");
-            String respuesta = scanner.nextLine().trim().toLowerCase();
-            if (!respuesta.equals("s") && !respuesta.equals("si") && !respuesta.equals("sí")) {
-                agregarMasPizzas = false;
+            // Enviar a la cocina
+            boolean agregada = cocina.agregarOrden(orden);
+            if (agregada) {
+                salida.setText("Orden #" + numOrden + " enviada a cocina con éxito.\n"
+                    + "Cliente: " + cliente + "\n"
+                    + pizza.toString() + "\n"
+                    + "Órdenes en cocina: " + cocina.getCantidadOrdenes() + "/5");
+            } else {
+                salida.setText("ADVERTENCIA: La cocina está llena (máximo 5 órdenes).\n"
+                    + "Despache una orden antes de enviar una nueva.");
             }
-        }
+        });
 
-        System.out.println("\n--- ENVIANDO ORDEN A LA COCINA ---");
-        boolean agregada = cocina.agregarOrden(orden);
-        if (!agregada) {
-            System.out.println("ADVERTENCIA: La orden #" + numOrden + " no pudo entrar a la cocina");
-            System.out.println("porque el límite de 5 órdenes pendientes está lleno.");
-            System.out.println("Despache una orden pendiente para liberar espacio.");
-        }
-    }
+        // Botón 2: Ver órdenes pendientes
+        btnVer.addActionListener(e -> {
+            salida.setText("Órdenes pendientes en cocina: " + cocina.getCantidadOrdenes() + "/5\n");
+            cocina.mostrarOrdenesPendientes();
+            salida.append("(Detalle completo listado en consola con mostrarOrdenesPendientes())");
+        });
 
-    private static Pizza armarPizzaInteractiva() {
-        System.out.println("\n-------------------------------------------");
-        System.out.println("        ENSAMBLADO DE PIZZA");
-        System.out.println("Seleccione el tipo de masa (base):");
-        System.out.println("  1. Tradicional");
-        System.out.println("  2. Delgada");
-        System.out.println("  3. Gruesa / Pan pizza");
-        System.out.println("  4. Borde de Queso");
-        System.out.print("Opción (1-4): ");
-        int opcMasa = leerEntero();
-        String masa;
-        switch (opcMasa) {
-            case 2: masa = "Delgada"; break;
-            case 3: masa = "Gruesa"; break;
-            case 4: masa = "Borde de Queso"; break;
-            default: masa = "Tradicional"; break;
-        }
-        System.out.println("\nSeleccione el tipo de salsa:");
-        System.out.println("  1. Normal (Tomate clásico)");
-        System.out.println("  2. Picante");
-        System.out.println("  3. Barbacoa");
-        System.out.println("  4. Salsa Blanca / Alfredo");
-        System.out.print("Opción (1-4): ");
-        int opcSalsa = leerEntero();
-        String salsa;
-        switch (opcSalsa) {
-            case 2: salsa = "Picante"; break;
-            case 3: salsa = "Barbacoa"; break;
-            case 4: salsa = "Salsa Blanca"; break;
-            default: salsa = "Normal"; break;
-        }
-
-        System.out.print("\n¿Lleva queso mozzarella? (s/n): ");
-        String respQueso = scanner.nextLine().trim().toLowerCase();
-        boolean tieneQueso = !respQueso.equals("n") && !respQueso.equals("no");
-
-        Pizza pizza = new Pizza(masa, salsa, tieneQueso);
-
-        boolean agregandoIngredientes = true;
-        while (agregandoIngredientes) {
-            System.out.println("\n--- AGREGAR INGREDIENTES ---");
-            System.out.println("  1. Agregar 1 ingrediente simple");
-            System.out.println("  2. Agregar ingrediente con cantidad específica");
-            System.out.println("  3. Agregar varios ingredientes a la vez");
-            System.out.println("  4. Listo, no agregar más ingredientes a esta pizza");
-            System.out.print("Opción (1-4): ");
-            int opcTopp = leerEntero();
-
-            switch (opcTopp) {
-                case 1:
-                    System.out.print("Nombre del ingrediente (ej. Jamón, Pepperoni, Piña): ");
-                    String ingSimple = scanner.nextLine().trim();
-                    if (!ingSimple.isEmpty()) {
-                        pizza.agregarIngrediente(ingSimple);
-                        System.out.println("Ingrediente agregado: " + ingSimple);
-                    }
-                    break;
-
-                case 2:
-                    System.out.print("Nombre del ingrediente (ej. Pepperoni, Tocino): ");
-                    String ingCant = scanner.nextLine().trim();
-                    System.out.print("Cantidad (porciones): ");
-                    int cantidad = leerEntero();
-                    if (!ingCant.isEmpty() && cantidad > 0) {
-                        pizza.agregarIngrediente(ingCant, cantidad);
-                        System.out.println("Ingrediente agregado: " + ingCant + " x" + cantidad);
-                    }
-                    break;
-
-                case 3:
-                    System.out.print("Ingrese los ingredientes separados por coma (ej. Jamón, Champiñones, Cebolla): ");
-                    String linea = scanner.nextLine().trim();
-                    if (!linea.isEmpty()) {
-                        String[] partes = linea.split(",");
-                        for (int i = 0; i < partes.length; i++) {
-                            partes[i] = partes[i].trim();
-                        }
-                        pizza.agregarIngrediente(partes);
-                        System.out.println("Arreglo de " + partes.length + " ingredientes agregado.");
-                    }
-                    break;
-
-                case 4:
-                    agregandoIngredientes = false;
-                    break;
-
-                default:
-                    System.out.println("Opción no válida.");
-                    break;
+        // Botón 3: Despachar orden con el cocinero
+        btnDespachar.addActionListener(e -> {
+            Orden despachada = cocina.despacharSiguienteOrden();
+            if (despachada != null) {
+                chef.preparar(despachada);
+                salida.setText("Orden #" + despachada.getNumOrden() + " despachada y preparada por " + chef.getNombre() + ".\n"
+                    + "Estado: " + despachada.getEstado() + "\n"
+                    + "Órdenes restantes en cocina: " + cocina.getCantidadOrdenes() + "/5");
+            } else {
+                salida.setText("No hay órdenes pendientes en la cocina para despachar.");
             }
-        }
+        });
 
-        return pizza;
-    }
+        // Armar el marco y mostrarlo
+        frame.add(campos, BorderLayout.NORTH);
+        frame.add(panelBotones, BorderLayout.CENTER);
+        frame.add(new JScrollPane(salida), BorderLayout.SOUTH);
 
-    private static int leerEntero() {
-        while (true) {
-            try {
-                String linea = scanner.nextLine().trim();
-                return Integer.parseInt(linea);
-            } catch (NumberFormatException e) {
-                System.out.print("Entrada no válida. Ingrese un número entero: ");
-            }
-        }
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 }

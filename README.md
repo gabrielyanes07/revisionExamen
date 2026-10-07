@@ -1,2 +1,2 @@
 # revisionExamen
-Revisión para examen
+Todos los comentarios están en el código, para revisarlos.
